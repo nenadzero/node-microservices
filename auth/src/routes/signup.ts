@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import { body, validationResult } from "express-validator";
+import jwt from "jsonwebtoken";
 
 import { User } from "../models/user";
 
@@ -21,11 +22,18 @@ router.post(
         }
         const { email, password } = req.body;
         const existingUser = await User.findOne({ email });
-        if(existingUser) {
+        if (existingUser) {
             throw new BadRequestError("User with this Email already exists");
         }
         const user = User.build({ email, password });
         await user.save();
+
+        const userJwt = jwt.sign({ id: user.id, email: user.email }, "secretkey");
+
+        req.session = {
+            jwt: userJwt,
+        };
+
         return res.status(201).send(user);
     }
 );
